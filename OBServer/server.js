@@ -2,9 +2,19 @@ const Hapi = require('hapi');
 const inert =  require('inert');
 const Good = require('good');
 const Boom = require('Boom');
+const Joi = require('joi');
 
 const server = new Hapi.Server();
 server.connection({ port: 3000, host: 'localhost' });
+
+server.state('hello', {
+    ttl: 60 * 60 * 1000,
+    path: "/",
+    isHttpOnly: true,
+    encoding: 'iron',
+    isSecure: false,
+    password: 'a5LewP10pXNbWUdYQakUfVlk1jUVuLuUU6E1WEE302k'
+});
 
 server.route( {
     method: 'GET',
@@ -15,6 +25,48 @@ server.route( {
         // reply('Hello, world!');
     }
 });
+
+
+
+server.route({
+    method: 'GET',
+    path: '/cookie',
+    config: {
+        handler: function(request, reply) {
+            var hello = request.state.hello;
+            reply('Cookies!' +  hello)
+                .state('hello', 'world');
+        }
+    }
+});
+
+
+server.route({
+    method: ['POST','PUT'],
+    path: '/user/{id?}',
+    config: {
+        validate: {
+            params: Joi.object().keys({
+                id: Joi.number()
+            }),
+            payload: Joi.object().keys({
+                id: Joi.number(),
+                email: Joi.string()
+            }).unknown(),
+            query: Joi.object().keys({
+                id: Joi.number()
+            })
+        },
+        handler: function(request, reply) {
+            reply({
+                params: request.params,
+                query: request.query,
+                payload: request.payload
+            })
+        }
+    }
+});
+
 
 server.route( {
     method: 'GET',
